@@ -1,69 +1,34 @@
 "use client";
+import { useState } from "react";
+import { supabase } from "../../lib/supabase";
 
-import { useState, useEffect } from "react";
-import { supabase } from "../../../lib/supabase";
+export default function Send() {
+  const [pseudo, setPseudo] = useState("");
+  const [from, setFrom] = useState("");
+  const [message, setMessage] = useState("");
 
-export default function Messages({ params }) {
-  const pseudo = params.pseudo;
+  async function sendMessage() {
+    if (!pseudo || !from || !message) return alert("Complète tous les champs.");
 
-  const [passwordInput, setPasswordInput] = useState("");
-  const [messages, setMessages] = useState([]);
-  const [authorized, setAuthorized] = useState(false);
+    await supabase.from("messages").insert({
+      to: pseudo,
+      from,
+      message,
+      timestamp: new Date()
+    });
 
-  async function checkPassword() {
-    const savedPassword = localStorage.getItem(`pwd_${pseudo}`);
-
-    if (!savedPassword) {
-      alert("Aucun mot de passe enregistré pour ce pseudo.");
-      return;
-    }
-
-    if (passwordInput !== savedPassword) {
-      alert("Mot de passe incorrect.");
-      return;
-    }
-
-    setAuthorized(true);
-    loadMessages();
-  }
-
-  async function loadMessages() {
-    const { data } = await supabase
-      .from("messages")
-      .select("*")
-      .eq("to", pseudo)
-      .order("timestamp", { ascending: false });
-
-    setMessages(data);
-  }
-
-  if (!authorized) {
-    return (
-      <div className="container">
-        <h1>Messages de {pseudo}</h1>
-
-        <input
-          type="password"
-          placeholder="Mot de passe"
-          value={passwordInput}
-          onChange={(e) => setPasswordInput(e.target.value)}
-        />
-
-        <button onClick={checkPassword}>Valider</button>
-      </div>
-    );
+    alert("Message envoyé !");
   }
 
   return (
     <div className="container">
-      <h1>Messages reçus</h1>
+      <h2>Envoyer un message anonyme</h2>
 
-      {messages.map((msg, index) => (
-        <div key={index} className="message-item">
-          <p><b>{msg.from} :</b></p>
-          <p>{msg.message}</p>
-        </div>
-      ))}
+      <input placeholder="Pseudo du destinataire" onChange={e => setPseudo(e.target.value)} />
+      <input placeholder="Ton pseudo (ou Anonyme)" onChange={e => setFrom(e.target.value)} />
+      <textarea placeholder="Ton message..." onChange={e => setMessage(e.target.value)} />
+
+      <button onClick={sendMessage}>Envoyer</button>
     </div>
   );
 }
